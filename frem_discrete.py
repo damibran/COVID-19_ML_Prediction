@@ -3,7 +3,10 @@ from scipy import integrate
 import numpy as np
 import torchxrayvision as xrv
 import pandas as pd
+import random
 
+def rand()->float:
+    return random.random()*60-30
 
 class image_mat_sampler:
     def __init__(self, img_mat: np.ndarray):
@@ -90,25 +93,31 @@ def frem1(img: image_mat_sampler, t, n, m):
 d = xrv.datasets.COVID19_Dataset(
     imgpath="covid-chestxray-dataset/images/", csvpath="covid-chestxray-dataset/metadata.csv")
 
-Nmax = 1
-alphas = [1.5]
+Nmax = 10
+alphas = [1, 1.2, 1.5]
 data = dict()
 for a in alphas:
     for n in range(1, Nmax+1):
         for m in range(1, Nmax+1):
-            data["FrEM_"+str(a)+"_"+str(n)+"_"+str(m)] = []
+            data["FrEM_"+str(a)+"_"+str(n)+"_"+str(m)
+                 + "_Re"] = []
+            data["FrEM_"+str(a)+"_"+str(n)+"_"+str(m)
+                 + "_Im"] = []
 
-data['COVID']=[]
+data['COVID'] = []
 
-for i in range(4):
+for i in range(100):
     sample = d[i]
     img = image_mat_sampler(sample["img"][0])
     for a in alphas:
         for n in range(1, Nmax+1):
             for m in range(1, Nmax+1):
+                val = rand()+1j*rand() # frem1(img, a, n, m)
                 data["FrEM_"+str(a)+"_"+str(n)+"_"+str(m)
-                     ].append(frem1(img, a, n, m))
-                data["COVID"].append(sample["lab"][3])
+                     + "_Re"].append(np.real(val))  
+                data["FrEM_"+str(a)+"_"+str(n)+"_"+str(m)
+                     + "_Im"].append(np.imag(val))
+    data["COVID"].append(sample["lab"][3])
 
 pd.DataFrame(data).to_csv('data.csv', index=False)
 
