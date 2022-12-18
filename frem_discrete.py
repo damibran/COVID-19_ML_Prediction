@@ -96,12 +96,12 @@ if __name__ == '__main__':
     d = xrv.datasets.COVID19_Dataset(
         imgpath="covid-chestxray-dataset/images/", csvpath="covid-chestxray-dataset/metadata.csv")
 
-    Nmax = 10
+    Nmax = 9
     alphas = [1, 1.2, 1.5]
     data = dict()
     for a in alphas:
-        for n in range(1, Nmax+1):
-            for m in range(1, Nmax+1):
+        for n in range(Nmax):
+            for m in range(Nmax):
                 data["FrEM_"+str(a)+"_"+str(n)+"_"+str(m)
                      + "_Re"] = []
                 data["FrEM_"+str(a)+"_"+str(n)+"_"+str(m)
@@ -111,14 +111,14 @@ if __name__ == '__main__':
 
     pool = Pool()
 
-    for i in range(100):
+    for i in range(len(d)):
         sample = d[i]
         sample_img = image_mat_sampler(sample["img"][0])
         for a in alphas:
-            for n in range(1, Nmax+1):
-                res = pool.map(partial(frem1,sample_img,a,n),range(1, Nmax+1))
-                for m in range(1, Nmax+1):
-                    val = res[m-1]
+            for n in range(Nmax):
+                res = pool.map(partial(frem1,sample_img,a,n),range(0, Nmax))
+                for m in range(Nmax):
+                    val = res[m]
                     data["FrEM_"+str(a)+"_"+str(n)+"_"+str(m)
                          + "_Re"].append(np.real(val))  
                     data["FrEM_"+str(a)+"_"+str(n)+"_"+str(m)
