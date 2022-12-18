@@ -1,0 +1,133 @@
+import pandas as pd
+import random
+import numpy as np
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.model_selection import train_test_split
+
+df = pd.read_csv('data.csv')
+
+D = len(df.columns)-1
+N = 100
+T = 10000
+F = 1  # mutation scaling factor
+
+
+class Agent:
+
+    def __init__(self) -> None:
+        self.x = Agent.gen_rand_x()
+
+    def gen_rand_x() -> list[float]:
+        x = []
+        for col in df.columns[:-1]:
+            lb = min(df[col])
+            ub = max(df[col])
+            x.append(lb+random.random()*(ub-lb))
+        return x
+
+    def fitness_func(self) -> float:
+        def to_binary(self):
+            bin = []
+            for x_i in self.x:
+                eq = 1/(1+np.exp(-x_i))
+                bin.append(eq > 0.5)
+            return bin
+
+        bin = to_binary(self)
+
+        N_sel = bin.count(True)
+
+        to_delete = [df.columns[i] for i in range(len(bin)) if bin[i] == False]
+
+        df1 = df.drop(to_delete, axis='columns')
+
+        X = df1[df1.columns[:-1]]
+        Y = df1[df1.columns[-1]]
+
+        X_train, X_test, Y_train, Y_test = train_test_split(
+            X,
+            Y,
+            test_size=0.2
+        )
+
+        neigh = KNeighborsClassifier(n_neighbors=3)
+        neigh.fit(X_train, Y_train)
+        y_pred = neigh.predict(X_test)
+
+        error = np.sum(y_pred == Y_test)/len(y_pred)
+
+        beta = random.random()
+
+        return beta*error+(1-beta)*N_sel/D
+
+    def Chain_Cyclone(self, t: float, i: int, x_best: list[float], agents: list['Agent']) -> None:
+        if random.random() < 0.5:
+            r = [random.random() for i in range(len(self.x))]
+            r1 = random.random()
+            beta = 2*np.exp(r1*(T-t+1)/T)*np.sin(2*np.pi*r1)
+            if (t/T < random.random()):
+                # eq 13
+                if (i == 0):
+                    self.x = x_best+r*(x_best-self.x)+beta*(x_best-self.x)
+                else:
+                    self.x = x_best+r * \
+                        (agents[i-1].x-self.x)+beta*(x_best-self.x)
+            else:
+                # eq 15
+                x_rand = Agent.gen_rand_x()
+                if (i == 0):
+                    self.x = x_rand+r*(x_rand-self.x)+beta*(x_rand-self.x)
+                else:
+                    self.x = x_rand+r*(agents[i-1]-self.x)+beta*(x_rand-self.x)
+        else:
+            # eq 11
+            r = [random.random() for i in range(len(self.x))]
+            alpha = 2*np.sqrt(np.log(np.linalg.norm(r)))*r
+            if (i == 0):
+                self.x = self.x+r*(x_best-self.x)+alpha*(x_best-self.x)
+            else:
+                self.x = self.x+r*(agents[i-1].x-self.x)+alpha*(x_best-self.x)
+
+    def Somersault(self, x_best: list[float]):
+        S = 2
+        r2 = random.random()
+        r3 = random.random()
+        self.x = self.x + S*(r2*x_best-r3*self.x)
+
+    def DE(self, i: float, agents: list['Agent']) -> None:
+        x_r1 = agents[random.choice([j for j in range(len(agents)) if j != i])]
+        x_r2 = agents[random.choice([j for j in range(len(agents)) if j != i])]
+        x_r3 = agents[random.choice([j for j in range(len(agents)) if j != i])]
+
+        # probability already satisfied
+
+        V = Agent()
+        V.x = x_r1 + F*(x_r2 - x_r3)
+
+        if (V.fitness_func() < self.fitness_func()):
+            self.x = V.x
+
+
+def calc_Pr(i: int, ffs: list[float]) -> float:
+    sum = sum(ffs)
+    return ffs[i]/sum
+
+
+agents = [Agent() for i in range(N)]
+t = 0
+while (True):
+    ffs = [agent.fitness_func() for agent in agents]
+
+    best_ind = np.argmin(ffs)
+
+    for i in range(len(agents)):
+        agents[i].Chain_Cyclone(t, i, agents[best_ind].x, agents)
+
+    for i in range(len(agents)):
+        Pr = calc_Pr(i, ffs)
+        if Pr < 0.5:
+            agents[i].Somersault(agents[best_ind].x)
+        else:
+            agents[i].DE(i,agents)
+
+    t += 1
