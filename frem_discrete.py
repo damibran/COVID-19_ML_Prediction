@@ -4,6 +4,8 @@ import numpy as np
 import torchxrayvision as xrv
 import pandas as pd
 import random
+from multiprocessing import Pool
+from functools import partial
 
 def rand()->float:
     return random.random()*60-30
@@ -89,39 +91,43 @@ def frem1(img: image_mat_sampler, t, n, m):
 
     return sum_v/(np.pi*img.N**2)
 
+if __name__ == '__main__':
 
-d = xrv.datasets.COVID19_Dataset(
-    imgpath="covid-chestxray-dataset/images/", csvpath="covid-chestxray-dataset/metadata.csv")
+    d = xrv.datasets.COVID19_Dataset(
+        imgpath="covid-chestxray-dataset/images/", csvpath="covid-chestxray-dataset/metadata.csv")
 
-Nmax = 10
-alphas = [1, 1.2, 1.5]
-data = dict()
-for a in alphas:
-    for n in range(1, Nmax+1):
-        for m in range(1, Nmax+1):
-            data["FrEM_"+str(a)+"_"+str(n)+"_"+str(m)
-                 + "_Re"] = []
-            data["FrEM_"+str(a)+"_"+str(n)+"_"+str(m)
-                 + "_Im"] = []
-
-data['COVID'] = []
-
-for i in range(100):
-    sample = d[i]
-    img = image_mat_sampler(sample["img"][0])
+    Nmax = 10
+    alphas = [1, 1.2, 1.5]
+    data = dict()
     for a in alphas:
         for n in range(1, Nmax+1):
             for m in range(1, Nmax+1):
-                val = rand()+1j*rand() # frem1(img, a, n, m)
                 data["FrEM_"+str(a)+"_"+str(n)+"_"+str(m)
-                     + "_Re"].append(np.real(val))  
+                     + "_Re"] = []
                 data["FrEM_"+str(a)+"_"+str(n)+"_"+str(m)
-                     + "_Im"].append(np.imag(val))
-    data["COVID"].append(sample["lab"][3])
+                     + "_Im"] = []
 
-pd.DataFrame(data).to_csv('data.csv', index=False)
+    data['COVID'] = []
 
-df = pd.read_csv('data.csv')
+    pool = Pool()
+
+    for i in range(100):
+        sample = d[i]
+        sample_img = image_mat_sampler(sample["img"][0])
+        for a in alphas:
+            for n in range(1, Nmax+1):
+                res = pool.map(partial(frem1,sample_img,a,n),range(1, Nmax+1))
+                for m in range(1, Nmax+1):
+                    val = res[m-1]
+                    data["FrEM_"+str(a)+"_"+str(n)+"_"+str(m)
+                         + "_Re"].append(np.real(val))  
+                    data["FrEM_"+str(a)+"_"+str(n)+"_"+str(m)
+                         + "_Im"].append(np.imag(val))
+        data["COVID"].append(sample["lab"][3])
+
+    pd.DataFrame(data).to_csv('data.csv', index=False)
+
+    df = pd.read_csv('data.csv')
 
 #I = frem1(img, 1, 1, 1)
 #
