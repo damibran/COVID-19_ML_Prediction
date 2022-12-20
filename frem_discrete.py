@@ -6,9 +6,12 @@ import pandas as pd
 import random
 from multiprocessing import Pool
 from functools import partial
+import os
 
-def rand()->float:
+
+def rand() -> float:
     return random.random()*60-30
+
 
 class image_mat_sampler:
     def __init__(self, img_mat: np.ndarray):
@@ -91,6 +94,7 @@ def frem1(img: image_mat_sampler, t, n, m):
 
     return sum_v/(np.pi*img.N**2)
 
+
 if __name__ == '__main__':
 
     d = xrv.datasets.COVID19_Dataset(
@@ -103,14 +107,13 @@ if __name__ == '__main__':
         for n in range(Nmax):
             for m in range(Nmax):
                 data["FrEM_"+str(a)+"_"+str(n)+"_"+str(m)
-                     + "_Re"] = []
+                     + "_Re"] = 0
                 data["FrEM_"+str(a)+"_"+str(n)+"_"+str(m)
-                     + "_Im"] = []
+                     + "_Im"] = 0
 
-    data['COVID'] = []
+    data['COVID'] = 0
 
     pool = Pool()
-
     for i in range(len(d)):
         sample = d[i]
         sample_img = image_mat_sampler(sample["img"][0])
@@ -119,20 +122,13 @@ if __name__ == '__main__':
                 res = pool.map(partial(frem1,sample_img,a,n),range(0, Nmax))
                 for m in range(Nmax):
                     val = res[m]
+                    val = rand()+1j*rand()
                     data["FrEM_"+str(a)+"_"+str(n)+"_"+str(m)
-                         + "_Re"].append(np.real(val))  
+                         + "_Re"] = np.real(val)
                     data["FrEM_"+str(a)+"_"+str(n)+"_"+str(m)
-                         + "_Im"].append(np.imag(val))
-        data["COVID"].append(sample["lab"][3])
+                         + "_Im"] = np.imag(val)
+        data["COVID"] = sample["lab"][3]
+        pd.DataFrame(data, index=[i]).to_csv('data.csv', mode='a',
+                                  index=False, header=not os.path.exists('data.csv'))
 
-    pd.DataFrame(data).to_csv('data.csv', index=False)
-
-    df = pd.read_csv('data.csv')
-
-#I = frem1(img, 1, 1, 1)
-#
-# print(I)
-#
-#I = frem2(img, 1, 1, 1)
-#
-# print(I)
+    #df = pd.read_csv('data.csv')
