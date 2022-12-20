@@ -101,7 +101,7 @@ if __name__ == '__main__':
         imgpath="covid-chestxray-dataset/images/", csvpath="covid-chestxray-dataset/metadata.csv")
 
     Nmax = 9
-    alphas = [1, 1.2, 1.5]
+    alphas = [1.5]
     data = dict()
     for a in alphas:
         for n in range(Nmax):
@@ -114,22 +114,29 @@ if __name__ == '__main__':
     data['COVID'] = 0
 
     pool = Pool()
-    for i in range(len(d)):
-
+    for i in range(58,len(d)):
+        skip = False
+        print(i)
         sample = d[i]
         sample_img = image_mat_sampler(sample["img"][0])
 
         for a in alphas:
-            for n in range(Nmax):
-                res = pool.map(partial(frem1,sample_img,a,n),range(Nmax))
-                for m in range(Nmax):
-                    val = res[m]
-                    data["FrEM_"+str(a)+"_"+str(n)+"_"+str(m)
-                         + "_Re"] = np.real(val)
-                    data["FrEM_"+str(a)+"_"+str(n)+"_"+str(m)
-                         + "_Im"] = np.imag(val)
+            if not skip:
+                for n in range(Nmax):
+                    if not skip:
+                        res = pool.map(partial(frem1,sample_img,a,n),range(Nmax))
+                        if  all([np.isnan(res[i]) for i in range(len(res))]):
+                            skip=True
+                            continue
+                        for m in range(Nmax):
+                            val = res[m]
+                            data["FrEM_"+str(a)+"_"+str(n)+"_"+str(m)
+                                 + "_Re"] = np.real(val)
+                            data["FrEM_"+str(a)+"_"+str(n)+"_"+str(m)
+                                 + "_Im"] = np.imag(val)
 
-        data["COVID"] = sample["lab"][3]
+        if not skip:
+            data["COVID"] = sample["lab"][3]
 
-        pd.DataFrame(data, index=[i]).to_csv('data.csv', mode='a',
-                                  index=True, header=not os.path.exists('data.csv'))
+            pd.DataFrame(data, index=[i]).to_csv('new_data.csv', mode='a',
+                                      index=True, header=not os.path.exists('new_data.csv'))
