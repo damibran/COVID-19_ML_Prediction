@@ -115,20 +115,24 @@ if __name__ == '__main__':
 
     pool = Pool()
     for i in range(len(d)):
+
         sample = d[i]
         sample_img = image_mat_sampler(sample["img"][0])
+
         for a in alphas:
             for n in range(Nmax):
-                res = pool.map(partial(frem1,sample_img,a,n),range(0, Nmax))
+                res = pool.map(partial(frem1,sample_img,a,n),range(Nmax))
                 for m in range(Nmax):
                     val = res[m]
-                    val = rand()+1j*rand()
+
                     data["FrEM_"+str(a)+"_"+str(n)+"_"+str(m)
                          + "_Re"] = np.real(val)
                     data["FrEM_"+str(a)+"_"+str(n)+"_"+str(m)
                          + "_Im"] = np.imag(val)
+
         data["COVID"] = sample["lab"][3]
+
         pd.DataFrame(data, index=[i]).to_csv('data.csv', mode='a',
-                                  index=False, header=not os.path.exists('data.csv'))
+                                  index=True, header=not os.path.exists('data.csv'))
 
     #df = pd.read_csv('data.csv')
