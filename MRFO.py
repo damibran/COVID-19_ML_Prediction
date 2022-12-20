@@ -5,7 +5,7 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
 
-df = pd.read_csv('data.csv')
+df = pd.read_csv('data.csv',index_col=0)
 
 D = len(df.columns)-1
 N = 100

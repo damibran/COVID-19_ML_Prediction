@@ -124,7 +124,6 @@ if __name__ == '__main__':
                 res = pool.map(partial(frem1,sample_img,a,n),range(Nmax))
                 for m in range(Nmax):
                     val = res[m]
-
                     data["FrEM_"+str(a)+"_"+str(n)+"_"+str(m)
                          + "_Re"] = np.real(val)
                     data["FrEM_"+str(a)+"_"+str(n)+"_"+str(m)
@@ -134,5 +133,3 @@ if __name__ == '__main__':
 
         pd.DataFrame(data, index=[i]).to_csv('data.csv', mode='a',
                                   index=True, header=not os.path.exists('data.csv'))
-
-    #df = pd.read_csv('data.csv')
