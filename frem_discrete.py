@@ -81,7 +81,7 @@ if __name__ == '__main__':
     data['COVID'] = 0
 
     pool = Pool()
-    for i in range(len(d)):
+    for i in range(163,len(d)):
         print(i)
         sample = d[i]
         sample_img = image_mat_sampler(sample["img"][0])

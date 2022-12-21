@@ -5,21 +5,24 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
 from sklearn.metrics import classification_report
+from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import cross_val_score
 
-df = pd.read_csv('data.csv',index_col=0)
+df = pd.read_csv('abs_data.csv',index_col=0)
+scaler = StandardScaler()
+df[df.columns[:-1]]=scaler.fit_transform(df[df.columns[:-1]])
 
 D = len(df.columns)-1
 N = 100
 T = 10000
 F = 1  # mutation scaling factor
 
-
 class Agent:
 
     def __init__(self) -> None:
         self.x = np.array(Agent.gen_rand_x(),dtype=np.float64)
-        self.accuracy = 0
-        self.N_sel=0
+        self.scores_mean = 0
+        self.N_sel=len(df.columns)-1
 
     def gen_rand_x() -> list[float]:
         x = []
@@ -30,14 +33,14 @@ class Agent:
         return x
 
     def to_binary(self):
-            bin = []
-            for x_i in self.x:
-                eq = 1/(1+np.exp(-x_i))
-                bin.append(eq > 0.5)
-            return bin
+        bin = []
+        for x_i in self.x:
+            eq = 1/(1+np.exp(-x_i))
+            bin.append(eq > 0.5)
+        return bin
 
     def fitness_func(self) -> float:
-        
+
         bin = self.to_binary()
 
         N_sel = bin.count(True)
@@ -50,25 +53,22 @@ class Agent:
         X = df1[df1.columns[:-1]]
         Y = df1[df1.columns[-1]]
 
-        X_train, X_test, Y_train, Y_test = train_test_split(
-            X,
-            Y,
-            test_size=0.2,
-            random_state=41
-        )
+        #X_train, X_test, Y_train, Y_test = train_test_split(
+        #    X,
+        #    Y,
+        #    test_size=0.2)
 
         neigh = KNeighborsClassifier(n_neighbors=3)
-        neigh.fit(X_train, Y_train)
-        y_pred = neigh.predict(X_test)
+        
+        scores_mean = cross_val_score(neigh,X,Y,).mean()
 
-        error = (len(y_pred)-np.sum(y_pred == Y_test))/len(y_pred)
-
+       # error = (len(y_pred)-np.sum(y_pred == Y_test))/len(y_pred)
 
         beta = random.random()
 
-        self.accuracy = accuracy_score(Y_test, y_pred)
+        self.scores_mean = scores_mean
 
-        return beta*error+(1-beta)*N_sel/D
+        return beta*(1-scores_mean)+(1-beta)*N_sel/D
 
     def Chain_Cyclone(self, t: float, i: int, x_best: np.array, agents: list['Agent']) -> None:
         r = np.array([random.random() for i in range(len(self.x))])
@@ -129,13 +129,12 @@ agents = [Agent() for i in range(N)]
 t = 0
 best_ind = 0
 best_bin = []
-while (agents[best_ind].accuracy < 0.8):
+while (agents[best_ind].scores_mean < 0.75):
     ffs = [agent.fitness_func() for agent in agents]
 
     best_ind = np.argmin(ffs)
-
     best_bin=agents[best_ind].to_binary()
-    print('Accuracy',agents[best_ind].accuracy,'N_sel',agents[best_ind].N_sel)
+    print('Accuracy',agents[best_ind].scores_mean,'N_sel',agents[best_ind].N_sel)
 
     for i in range(len(agents)):
         agents[i].Chain_Cyclone(t, i, agents[best_ind].x, agents)
@@ -149,13 +148,11 @@ while (agents[best_ind].accuracy < 0.8):
 
     t += 1
 
-print('Accuracy',agents[best_ind].accuracy,'N_sel',agents[best_ind].N_sel)
-
 print(best_bin.count(True))
 
 to_delete = [df.columns[i] for i in range(len(best_bin)) if best_bin[i] == False]
 
-print('Accuracy',agents[best_ind].accuracy,'N_sel',agents[best_ind].N_sel)
+print('Accuracy',agents[best_ind].scores_mean,'N_sel',agents[best_ind].N_sel)
 
 df1 = df.drop(to_delete, axis='columns')
 
@@ -164,8 +161,7 @@ Y = df1[df1.columns[-1]]
 X_train, X_test, Y_train, Y_test = train_test_split(
     X,
     Y,
-    test_size=0.2,
-    random_state=41)
+    test_size=0.2)
 
 neigh = KNeighborsClassifier(n_neighbors=3)
 neigh.fit(X_train, Y_train)
