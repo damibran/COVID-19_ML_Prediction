@@ -29,7 +29,7 @@ class image_mat_sampler:
 # Реализация из статьи про вычилесние FrEM (https://www.hindawi.com/journals/scn/2020/8822126/)
 def frem1(img: image_mat_sampler, t, n, m):
 
-    def Tp(r):
+    def FrE(r):
         return (r**(t-1)) * np.sqrt(2/(r**t)) * np.exp(1j*2*n*np.pi*(r**t))
 
     def x(q):
@@ -52,7 +52,7 @@ def frem1(img: image_mat_sampler, t, n, m):
         return angle
 
     def under_2_sum(q,p):
-        return img.getElmnt(q, p) * np.conjugate(Tp(r(q, p))) * np.exp(-1j*m*theta(q, p))
+        return img.getElmnt(q, p) * np.conjugate(FrE(r(q, p))) * np.exp(-1j*m*theta(q, p))
 
     def under_1_sum(p):
         return sum(under_2_sum(q, p) for q in range(img.N))

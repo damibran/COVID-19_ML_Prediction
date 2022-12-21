@@ -93,13 +93,13 @@ class Agent:
             else:
                 self.x = self.x+r*(agents[i-1].x-self.x)+alpha*(x_best-self.x)
 
-    def Somersault(self, x_best: list[float]):
+    def Somersault(self, x_best: np.array):
         S = 2
         r2 = random.random()
         r3 = random.random()
         self.x = self.x + S*(r2*x_best-r3*self.x)
 
-    def DE(self, i: float, agents: list['Agent']) -> None:
+    def DE(self, i: int, agents: list['Agent']) -> None:
         x_r1 = agents[random.choice(
             [j for j in range(len(agents)) if j != i])].x
         x_r2 = agents[random.choice(
