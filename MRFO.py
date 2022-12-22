@@ -5,8 +5,11 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
 from sklearn.metrics import classification_report
+from sklearn.preprocessing import StandardScaler
 
 df = pd.read_csv('data.csv',index_col=0)
+scaler = StandardScaler()
+df[df.columns[:-1]]=scaler.fit_transform(df[df.columns[:-1]])
 
 D = len(df.columns)-1
 N = 100
@@ -129,7 +132,7 @@ agents = [Agent() for i in range(N)]
 t = 0
 best_ind = 0
 best_bin = []
-while (agents[best_ind].accuracy < 0.8):
+while (agents[best_ind].accuracy < 0.73):
     ffs = [agent.fitness_func() for agent in agents]
 
     best_ind = np.argmin(ffs)

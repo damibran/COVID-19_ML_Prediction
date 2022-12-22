@@ -7,8 +7,9 @@ from sklearn.metrics import accuracy_score
 from sklearn.metrics import classification_report
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import cross_val_score
+from scipy.special import expit
 
-df = pd.read_csv('abs_data.csv',index_col=0)
+df = pd.read_csv('data.csv',index_col=0)
 scaler = StandardScaler()
 df[df.columns[:-1]]=scaler.fit_transform(df[df.columns[:-1]])
 
@@ -35,7 +36,7 @@ class Agent:
     def to_binary(self):
         bin = []
         for x_i in self.x:
-            eq = 1/(1+np.exp(-x_i))
+            eq = expit(x_i)
             bin.append(eq > 0.5)
         return bin
 
@@ -53,16 +54,9 @@ class Agent:
         X = df1[df1.columns[:-1]]
         Y = df1[df1.columns[-1]]
 
-        #X_train, X_test, Y_train, Y_test = train_test_split(
-        #    X,
-        #    Y,
-        #    test_size=0.2)
-
         neigh = KNeighborsClassifier(n_neighbors=3)
         
         scores_mean = cross_val_score(neigh,X,Y,).mean()
-
-       # error = (len(y_pred)-np.sum(y_pred == Y_test))/len(y_pred)
 
         beta = random.random()
 
@@ -129,12 +123,12 @@ agents = [Agent() for i in range(N)]
 t = 0
 best_ind = 0
 best_bin = []
-while (agents[best_ind].scores_mean < 0.75):
+while (agents[best_ind].scores_mean < 0.65):
     ffs = [agent.fitness_func() for agent in agents]
 
     best_ind = np.argmin(ffs)
     best_bin=agents[best_ind].to_binary()
-    print('Accuracy',agents[best_ind].scores_mean,'N_sel',agents[best_ind].N_sel)
+    print('Mean accuracy',agents[best_ind].scores_mean,'N_sel',agents[best_ind].N_sel)
 
     for i in range(len(agents)):
         agents[i].Chain_Cyclone(t, i, agents[best_ind].x, agents)
@@ -152,7 +146,7 @@ print(best_bin.count(True))
 
 to_delete = [df.columns[i] for i in range(len(best_bin)) if best_bin[i] == False]
 
-print('Accuracy',agents[best_ind].scores_mean,'N_sel',agents[best_ind].N_sel)
+print('Mean accuracy',agents[best_ind].scores_mean,'N_sel',agents[best_ind].N_sel)
 
 df1 = df.drop(to_delete, axis='columns')
 
@@ -161,11 +155,15 @@ Y = df1[df1.columns[-1]]
 X_train, X_test, Y_train, Y_test = train_test_split(
     X,
     Y,
-    test_size=0.2)
+    test_size=0.2,
+    random_state= 41)
 
 neigh = KNeighborsClassifier(n_neighbors=3)
 neigh.fit(X_train, Y_train)
 y_pred = neigh.predict(X_test)
 
 print(classification_report(Y_test, y_pred))
-print(accuracy_score(Y_test,y_pred))
+
+neigh = KNeighborsClassifier(n_neighbors=3)
+scores = cross_val_score(neigh,X,Y)
+print("%0.2f accuracy with a standard deviation of %0.2f" % (scores.mean(), scores.std()))

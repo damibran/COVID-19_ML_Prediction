@@ -7,6 +7,7 @@ import random
 from multiprocessing import Pool
 from functools import partial
 import os
+import datetime
 
 
 def rand() -> float:
@@ -80,10 +81,18 @@ if __name__ == '__main__':
 
     data['COVID'] = 0
 
+    remained_d =[]
+    for i in range(187,len(d)):
+        remained_d.append(d[i])
+
+    remained = list(zip(range(187,len(d)),remained_d))
+
+    remained.sort(key= lambda v: max(v[1]["img"][0].shape))
+
     pool = Pool()
-    for i in range(163,len(d)):
-        print(i)
-        sample = d[i]
+    for i,sample in remained:
+        print('Time:',datetime.datetime.now(),'Img_N:',i)
+        
         sample_img = image_mat_sampler(sample["img"][0])
 
         for a in alphas:
