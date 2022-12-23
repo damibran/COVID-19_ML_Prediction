@@ -6,10 +6,10 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
 from sklearn.metrics import classification_report
 from sklearn.preprocessing import StandardScaler
+from scipy.special import expit
+from sklearn.pipeline import make_pipeline
 
 df = pd.read_csv('data.csv',index_col=0)
-scaler = StandardScaler()
-df[df.columns[:-1]]=scaler.fit_transform(df[df.columns[:-1]])
 
 D = len(df.columns)-1
 N = 100
@@ -35,7 +35,7 @@ class Agent:
     def to_binary(self):
             bin = []
             for x_i in self.x:
-                eq = 1/(1+np.exp(-x_i))
+                eq = expit(x_i)
                 bin.append(eq > 0.5)
             return bin
 
@@ -60,9 +60,9 @@ class Agent:
             random_state=41
         )
 
-        neigh = KNeighborsClassifier(n_neighbors=3)
-        neigh.fit(X_train, Y_train)
-        y_pred = neigh.predict(X_test)
+        pipe = make_pipeline(StandardScaler(), KNeighborsClassifier(n_neighbors=3))
+        pipe.fit(X_train, Y_train)
+        y_pred = pipe.predict(X_test)
 
         error = (len(y_pred)-np.sum(y_pred == Y_test))/len(y_pred)
 
@@ -152,13 +152,7 @@ while (agents[best_ind].accuracy < 0.73):
 
     t += 1
 
-print('Accuracy',agents[best_ind].accuracy,'N_sel',agents[best_ind].N_sel)
-
-print(best_bin.count(True))
-
 to_delete = [df.columns[i] for i in range(len(best_bin)) if best_bin[i] == False]
-
-print('Accuracy',agents[best_ind].accuracy,'N_sel',agents[best_ind].N_sel)
 
 df1 = df.drop(to_delete, axis='columns')
 
@@ -170,9 +164,8 @@ X_train, X_test, Y_train, Y_test = train_test_split(
     test_size=0.2,
     random_state=41)
 
-neigh = KNeighborsClassifier(n_neighbors=3)
-neigh.fit(X_train, Y_train)
-y_pred = neigh.predict(X_test)
+pipe = make_pipeline(StandardScaler(), KNeighborsClassifier(n_neighbors=3))
+pipe.fit(X_train, Y_train)
+y_pred = pipe.predict(X_test)
 
 print(classification_report(Y_test, y_pred))
-print(accuracy_score(Y_test,y_pred))

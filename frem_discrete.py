@@ -21,11 +21,19 @@ class image_mat_sampler:
         if self.N % 2 != 0:
             self.N += 1
 
-    def getElmnt(self, x, y):
-        if (x < self.img_mat.shape[0] and y < self.img_mat.shape[1]):
-            return self.img_mat[x][y]
+    def getElmnt(self, q, p):
+        if (q < self.img_mat.shape[0] and p < self.img_mat.shape[1]) and (self.x(q)**2 + self.y(p)**2 <= 1):
+            return self.img_mat[q][p]
         else:
             return 0
+
+    def x(self, q):
+        return (2*q - self.N + 1)/self.N
+
+    def y(self, p):
+        return (self.N - 1 - 2*p)/self.N
+
+    
 
 # Реализация из статьи про вычилесние FrEM (https://www.hindawi.com/journals/scn/2020/8822126/)
 def frem1(img: image_mat_sampler, t, n, m):

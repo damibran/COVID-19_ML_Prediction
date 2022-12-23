@@ -12,6 +12,8 @@ from sklearn.pipeline import make_pipeline
 
 df = pd.read_csv('data.csv',index_col=0)
 
+df,df_test = train_test_split(df, random_state=41, test_size=0.2)
+
 D = len(df.columns)-1
 N = 100
 T = 10000
@@ -121,7 +123,7 @@ agents = [Agent() for i in range(N)]
 t = 0
 best_ind = 0
 best_bin = []
-while (agents[best_ind].scores_mean < 0.63):
+while (agents[best_ind].scores_mean < 0.66):
     ffs = [agent.fitness_func() for agent in agents]
 
     best_ind = np.argmin(ffs)
@@ -143,14 +145,13 @@ while (agents[best_ind].scores_mean < 0.63):
 to_delete = [df.columns[i] for i in range(len(best_bin)) if best_bin[i] == False]
 
 df1 = df.drop(to_delete, axis='columns')
+df1_test = df_test.drop(to_delete, axis='columns')
 
-X = df1[df1.columns[:-1]]
-Y = df1[df1.columns[-1]]
-X_train, X_test, Y_train, Y_test = train_test_split(
-    X,
-    Y,
-    test_size=0.2,
-    random_state= 41)
+X_test = df1_test[df1_test.columns[:-1]]
+Y_test = df1_test[df1_test.columns[-1]]
+
+X_train = df1[df1.columns[:-1]]
+Y_train = df1[df1.columns[-1]]
 
 pipe = make_pipeline(StandardScaler(), KNeighborsClassifier(n_neighbors=3))
 pipe.fit(X_train, Y_train)
@@ -159,5 +160,5 @@ y_pred = pipe.predict(X_test)
 print(classification_report(Y_test, y_pred))
 
 pipe = make_pipeline(StandardScaler(), KNeighborsClassifier(n_neighbors=3))        
-scores = cross_val_score(pipe,X,Y,)
+scores = cross_val_score(pipe,X_test,Y_test)
 print("%0.2f accuracy with a standard deviation of %0.2f" % (scores.mean(), scores.std()))
